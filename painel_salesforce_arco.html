@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pesquisa de Adoção — Salesforce · Arco Educação</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    /* Paleta Arco Educação */
+    --brand-dark:#030F31;
+    --brand-blue:#418EDE;
+    --brand-blue-bright:#1B83FF;
+    --brand-blue-deep:#284081;
+    --brand-orange:#FCB04E;
+    --brand-coral:#F05038;
+    --brand-gray:#B8B8BD;
+
+    /* Tema escuro (padrão — fundo escuro da empresa) */
+    --bg:#030F31;
+    --bg2:#0D1D45;
+    --bg3:#071228;
+    --text:#E8EAF0;
+    --text2:#B8B8BD;
+    --text3:#7A7E8A;
+    --border:rgba(65,142,222,0.18);
+    --border2:rgba(65,142,222,0.35);
+    --radius:8px;--radius-lg:12px;
+
+    /* Semântica mapeada na paleta */
+    --purple:#418EDE;
+    --purple-light:rgba(65,142,222,0.15);
+    --purple-dark:#1B83FF;
+    --teal:#4BC48A;
+    --teal-light:rgba(75,196,138,0.15);
+    --teal-dark:#2E8F60;
+    --amber:#FCB04E;
+    --amber-light:rgba(252,176,78,0.15);
+    --amber-dark:#B07520;
+    --coral:#F05038;
+    --coral-light:rgba(240,80,56,0.15);
+    --coral-dark:#C02A14;
+    --blue:#418EDE;
+    --blue-light:rgba(65,142,222,0.12);
+    --blue-dark:#284081;
+    --pink:#B85A8A;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg3);color:var(--text);min-height:100vh;}
+  .shell{max-width:1100px;margin:0 auto;padding:32px 24px;}
+  .page-title{font-size:22px;font-weight:500;margin-bottom:4px;}
+  .page-sub{font-size:14px;color:var(--text2);margin-bottom:24px;}
+  .metric-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:20px;}
+  .mc{background:var(--bg2);border-radius:var(--radius);padding:14px 16px;}
+  .ml{font-size:12px;color:var(--text2);margin-bottom:4px;}
+  .mv{font-size:22px;font-weight:500;}
+  .ms{font-size:11px;color:var(--text3);margin-top:2px;}
+  .nps-hero{background:var(--purple-light);border-left:3px solid var(--purple);border-radius:0 var(--radius) var(--radius) 0;padding:14px 16px;}
+  .nps-n{font-size:26px;font-weight:500;color:var(--purple-dark);}
+  .nps-l{font-size:11px;color:var(--purple);margin-bottom:2px;}
+  .nps-breakdown{display:flex;gap:6px;margin-top:6px;}
+  .nps-pill{flex:1;text-align:center;padding:5px 4px;border-radius:6px;}
+  .nps-prom{background:var(--teal-light);color:var(--teal-dark);}
+  .nps-neut{background:var(--amber-light);color:var(--amber-dark);}
+  .nps-det{background:var(--coral-light);color:var(--coral-dark);}
+  .nps-pill-n{font-size:13px;font-weight:500;}
+  .nps-pill-l{font-size:9px;margin-top:1px;}
+  .filter-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+  .fb{font-size:12px;padding:6px 14px;border-radius:20px;border:0.5px solid var(--border2);background:var(--bg);color:var(--text2);cursor:pointer;transition:all .15s;}
+  .fb:hover{background:var(--bg2);}
+  .fb.on{background:var(--purple);color:#fff;border-color:var(--purple);}
+  .tab-row{display:flex;border-bottom:0.5px solid var(--border);margin-bottom:20px;overflow-x:auto;}
+  .tab{font-size:13px;padding:9px 16px;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;background:none;border-top:none;border-left:none;border-right:none;}
+  .tab:hover{color:var(--text);}
+  .tab.on{color:var(--purple);border-bottom-color:var(--purple);font-weight:500;}
+  .sec{display:none;}
+  .sec.on{display:block;}
+  .cc{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:16px;}
+  .ct{font-size:14px;font-weight:500;margin-bottom:16px;}
+  .ct-sub{font-size:12px;color:var(--text2);margin-bottom:14px;margin-top:-10px;}
+  .r2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-bottom:16px;}
+  .r3{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;margin-bottom:16px;}
+  .crow{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .cn{font-size:12px;color:var(--text2);width:140px;flex-shrink:0;}
+  .cbw{flex:1;}
+  .cv{font-size:12px;font-weight:500;width:40px;text-align:right;flex-shrink:0;}
+  .bt{height:7px;background:var(--border);border-radius:4px;overflow:hidden;}
+  .bf{height:100%;border-radius:4px;transition:width .35s;}
+  .qb{background:var(--bg2);border-left:3px solid var(--purple);border-radius:0 var(--radius) var(--radius) 0;padding:10px 14px;margin-bottom:10px;font-size:12px;color:var(--text2);line-height:1.6;}
+  .qc{font-size:11px;font-weight:500;color:var(--purple);margin-top:5px;}
+  .qbp{background:var(--bg2);border-left:3px solid var(--teal);border-radius:0 var(--radius) var(--radius) 0;padding:10px 14px;margin-bottom:10px;font-size:12px;color:var(--text2);line-height:1.6;}
+  .qcp{font-size:11px;font-weight:500;color:var(--teal-dark);margin-top:5px;}
+  .theme-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border);transition:opacity .2s;}
+  .theme-row:last-child{border-bottom:none;}
+  .theme-row.dimmed{opacity:0.25;}
+  .theme-name{font-size:12px;flex:1;}
+  .theme-bar{width:80px;height:6px;background:var(--border);border-radius:3px;overflow:hidden;flex-shrink:0;}
+  .theme-bf{height:100%;border-radius:3px;transition:width .35s;}
+  .theme-count{font-size:11px;color:var(--text2);width:80px;text-align:right;flex-shrink:0;}
+  .sent-neg{background:var(--coral-light);color:var(--coral-dark);font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;flex-shrink:0;}
+  .sent-pos{background:var(--teal-light);color:var(--teal-dark);font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;flex-shrink:0;}
+  .sent-mix{background:var(--amber-light);color:var(--amber-dark);font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;flex-shrink:0;}
+  .srow{display:flex;align-items:flex-start;gap:14px;padding:12px 0;border-bottom:0.5px solid var(--border);}
+  .srow:last-child{border-bottom:none;}
+  .snum{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0;margin-top:1px;}
+  .sp1{background:var(--coral-light);color:var(--coral-dark);}
+  .sp2,.sp3{background:var(--amber-light);color:var(--amber-dark);}
+  .sp4{background:var(--purple-light);color:var(--purple-dark);}
+  .stxt{flex:1;}
+  .stit{font-size:13px;font-weight:500;margin-bottom:4px;}
+  .sdesc{font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:6px;}
+  .sbadges{display:flex;gap:6px;flex-wrap:wrap;}
+  .badge{font-size:10px;padding:2px 9px;border-radius:20px;font-weight:500;}
+  .b-vol{background:var(--blue-light);color:var(--blue-dark);}
+  .b-crit{background:var(--coral-light);color:var(--coral-dark);}
+  .b-med{background:var(--amber-light);color:var(--amber-dark);}
+  .b-low{background:var(--teal-light);color:var(--teal-dark);}
+  .esp-section{margin-bottom:22px;padding-bottom:22px;border-bottom:0.5px solid var(--border);transition:opacity .2s;}
+  .esp-section:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
+  .esp-section.hidden{display:none;}
+  .esp-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+  .esp-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+  .esp-title{font-size:14px;font-weight:500;}
+  .esp-n{font-size:12px;color:var(--text2);}
+  .pie-legend{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;}
+  .pie-leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);}
+  .pie-leg-sq{width:9px;height:9px;border-radius:2px;}
+  .radar-legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:14px;}
+  .radar-leg-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);cursor:pointer;transition:opacity .2s;}
+  .radar-leg-item.dimmed{opacity:0.3;}
+  .radar-leg-line{width:20px;height:2px;display:inline-block;}
+  .sent-summary{display:flex;gap:10px;margin-bottom:16px;}
+  .hbtn{font-size:11px;padding:5px 12px;border-radius:20px;border:0.5px solid var(--border2);background:var(--bg2);color:var(--text2);cursor:pointer;transition:all .15s;}
+  .hbtn:hover{opacity:0.8;}
+  .hbtn.on{background:var(--purple);color:#fff;border-color:var(--purple);}
+  .top3-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;}
+  @media(max-width:900px){.top3-grid{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:600px){.top3-grid{grid-template-columns:1fr;}}
+  .top3-card{background:var(--bg2);border-radius:var(--radius);padding:14px 16px;}
+  .top3-cargo{font-size:11px;font-weight:500;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+  .top3-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .top3-item{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+  .top3-rank{font-size:10px;font-weight:700;width:16px;color:var(--coral);flex-shrink:0;}
+  .top3-label{font-size:11px;color:var(--text2);flex:1;line-height:1.4;}
+  .top3-val{font-size:12px;font-weight:500;flex-shrink:0;}
+  .sent-card{flex:1;background:var(--bg2);border-radius:var(--radius);padding:12px 14px;}
+  .cargo-quote-block{display:none;}
+  .cargo-quote-block.visible{display:block;}
+  .perg-univ { opacity: 0.65; }
+  .perg-tag { font-size: 9px; padding: 1px 6px; border-radius: 10px; margin-left: 6px; font-weight: 500; background: var(--purple-light); color: var(--purple-dark); vertical-align: middle; }
+  .perg-tag-esp { background: var(--teal-light); color: var(--teal-dark); }
+  @media(max-width:768px){
+    .metric-grid{grid-template-columns:repeat(2,1fr);}
+    .r2,.r3{grid-template-columns:1fr;}
+    .shell{padding:16px 14px;}
+    .nps-hero{grid-column:1/-1;}
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- HEADER FIXO -->
+  <div style="margin-bottom:20px">
+    <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
+      <h1 class="page-title">Pesquisa de Esforço Salesforce — Q1/26</h1>
+      <span style="font-size:12px;color:var(--text3);padding:3px 10px;border-radius:20px;border:0.5px solid var(--border2)">01/04 – 15/04/2026</span>
+    </div>
+    <p style="font-size:13px;color:var(--text2);line-height:1.7;margin-top:8px;max-width:820px">
+      Aplicada via <strong>CES 2.0</strong> (Customer Effort Score, escala 1–7) com 184 respondentes dos times de <strong>CCE, CSE, CSP, SDR, Especialista Comercial e Lideranças</strong>.
+      Objetivo: mapear o esforço percebido no uso do Salesforce e identificar fricções prioritárias.
+      CES geral <strong id="hdr-ces">5.3/7</strong> <span style="color:var(--text3);font-size:11px">(meta ≥ 5.5 · benchmark CRM B2B: 5.0–5.5)</span> ·
+      NPS <strong id="hdr-nps">+3</strong> <span style="color:var(--text3);font-size:11px">(meta ≥ +20 · benchmark CRM interno B2B: +10 a +30)</span>.
+    </p>
+  </div>
+
+  <!-- CARGO HEADER DINÂMICO -->
+  <div id="cargo-header" style="display:none;background:var(--purple-light);border-left:3px solid var(--purple);border-radius:0 var(--radius) var(--radius) 0;padding:10px 16px;margin-bottom:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+    <div>
+      <div style="font-size:11px;color:var(--purple);margin-bottom:2px">Filtrando por cargo</div>
+      <div style="font-size:16px;font-weight:500;color:var(--purple-dark)" id="cargo-header-nome">—</div>
+    </div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap">
+      <div><div style="font-size:10px;color:var(--text3)">CES (Q1)</div><div style="font-size:18px;font-weight:500" id="cargo-hdr-ces">—</div></div>
+      <div><div style="font-size:10px;color:var(--text3)">Confiab. dados</div><div style="font-size:18px;font-weight:500" id="cargo-hdr-q3">—</div></div>
+      <div><div style="font-size:10px;color:var(--text3)">Registro</div><div style="font-size:18px;font-weight:500" id="cargo-hdr-q4">—</div></div>
+      <div><div style="font-size:10px;color:var(--text3)">NPS</div><div style="font-size:18px;font-weight:500" id="cargo-hdr-nps">—</div></div>
+      <div><div style="font-size:10px;color:var(--text3)">Respondentes</div><div style="font-size:18px;font-weight:500" id="cargo-hdr-n">—</div></div>
+    </div>
+  </div>
+
+  <div class="metric-grid">
+    <div class="mc">
+      <div class="ml">Respostas</div>
+      <div class="mv" id="mg-n">184</div>
+      <div class="ms">01–13/04/2026</div>
+    </div>
+    <div class="mc">
+      <div class="ml">CES — Facilidade geral (Q1)</div>
+      <div class="mv" id="mg-ces">5.3<span style="font-size:13px;color:var(--text3)">/7</span></div>
+      <div class="ms" style="color:var(--amber)">benchmark CRM B2B: 5.0–5.5 ↑</div>
+    </div>
+    <div class="mc">
+      <div class="ml">Confiabilidade dados (Q3)</div>
+      <div class="mv" style="color:var(--amber)" id="mg-q3">4.1<span style="font-size:13px;color:var(--text3)">/7</span></div>
+      <div class="ms" style="color:var(--coral)">benchmark CRM B2B: ≥ 5.0 ↓</div>
+    </div>
+    <div class="mc">
+      <div class="ml">App mobile</div>
+      <div class="mv" style="color:var(--coral)" id="mg-mob">3.5<span style="font-size:13px;color:var(--text3)">/7</span></div>
+      <div class="ms" style="color:var(--coral)">benchmark campo B2B: ≥ 4.5 ↓</div>
+    </div>
+    <div class="nps-hero">
+      <div class="nps-l">NPS · benchmark CRM interno B2B: +10 a +30</div>
+      <div class="nps-n" id="nps-val">+3</div>
+      <div class="nps-breakdown">
+        <div class="nps-pill nps-prom"><div class="nps-pill-n" id="nh-p">30%</div><div class="nps-pill-l">promotores</div></div>
+        <div class="nps-pill nps-neut"><div class="nps-pill-n" id="nh-n">42%</div><div class="nps-pill-l">neutros</div></div>
+        <div class="nps-pill nps-det"><div class="nps-pill-n" id="nh-d">28%</div><div class="nps-pill-l">detratores</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <button class="fb on" onclick="filterCargo(this,'todos')">Todos (184)</button>
+    <button class="fb" onclick="filterCargo(this,'lideranca')">Lideranças (20)</button>
+    <button class="fb" onclick="filterCargo(this,'cce')">CCE (48)</button>
+    <button class="fb" onclick="filterCargo(this,'cse')">CSE (38)</button>
+    <button class="fb" onclick="filterCargo(this,'sdr')">SDR (18)</button>
+    <button class="fb" onclick="filterCargo(this,'esp')">Especialista (10)</button>
+    <button class="fb" onclick="filterCargo(this,'csp')">CSP (51)</button>
+  </div>
+
+  <div class="tab-row">
+    <button class="tab on" onclick="showTab('geral')">Visão geral</button>
+    <button class="tab" onclick="showTab('dimensoes')">Dimensões correlacionadas</button>
+    <button class="tab" onclick="showTab('especificas')">Perguntas por cargo</button>
+    <button class="tab" onclick="showTab('distribuicao')">Distribuição & Correlação</button>
+    <button class="tab" onclick="showTab('comentarios')">Comentários & sentimento</button>
+    <button class="tab" onclick="showTab('prioridade')">Priorização</button>
+  </div>
+
+  <!-- VISÃO GERAL -->
+  <div id="tab-geral" class="sec on">
+    <div class="r3">
+      <div class="cc">
+        <div class="ct" id="q1-title">Satisfação geral — Q1 facilidade dia a dia (todos)</div>
+        <div id="q1-bars"></div>
+      </div>
+      <div class="cc">
+        <div class="ct">Participação por cargo</div>
+        <div class="pie-legend" id="pie-leg"></div>
+        <div style="position:relative;height:180px"><canvas id="pieC"></canvas></div>
+      </div>
+    </div>
+    <div class="r2">
+      <div class="cc">
+        <div class="ct">NPS real por cargo</div>
+        <div id="nps-bars"></div>
+        <p style="font-size:11px;color:var(--text3);margin-top:10px">Promotores = 9–10 · Neutros = 7–8 · Detratores = 0–6</p>
+      </div>
+      <div class="cc">
+        <div class="ct">Interesse em ser embaixador de CRM</div>
+        <div id="emb-bars"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DIMENSÕES -->
+  <div id="tab-dimensoes" class="sec">
+    <div class="cc">
+      <div class="ct" id="radar-title">Radar — dimensões universais correlacionadas por cargo (1–7)</div>
+      <p class="ct-sub">Perguntas mapeadas pela equivalência de conteúdo entre os questionários de cada cargo, não pela numeração.</p>
+      <div style="position:relative;height:340px"><canvas id="radarC"></canvas></div>
+      <div class="radar-legend" id="radar-leg"></div>
+    </div>
+    <div class="r2">
+      <div class="cc">
+        <div class="ct" id="q3-title">Confiabilidade das informações por cargo (Q3 correl.)</div>
+        <div id="q3-bars"></div>
+      </div>
+      <div class="cc">
+        <div class="ct" id="mob-title">App mobile por cargo</div>
+        <div id="mob-bars"></div>
+      </div>
+    </div>
+    <div class="cc">
+      <div class="ct" id="melhorar-title">Área que mais precisa melhorar — % de respondentes que selecionaram</div>
+      <div id="melhorar-bars"></div>
+    </div>
+  </div>
+
+  <!-- PERGUNTAS POR CARGO -->
+  <div id="tab-especificas" class="sec">
+    <div class="cc">
+      <div class="ct">Perguntas específicas por cargo</div>
+      <p class="ct-sub">Todas as perguntas de cada cargo. <span style="background:var(--purple-light);color:var(--purple-dark);font-size:9px;padding:1px 6px;border-radius:10px;font-weight:500">universal</span> = dimensão comparável entre cargos &nbsp;·&nbsp; <span style="background:var(--teal-light);color:var(--teal-dark);font-size:9px;padding:1px 6px;border-radius:10px;font-weight:500">específica</span> = exclusiva do fluxo deste cargo. Use o filtro acima para focar em um cargo.</p>
+      <div id="esp-content"></div>
+    </div>
+  </div>
+
+  <!-- COMENTÁRIOS -->
+  <div id="tab-comentarios" class="sec">
+    <div class="r2">
+      <div class="cc">
+        <div class="ct" id="temas-title">Temas nos comentários abertos</div>
+        <div id="temas-list"></div>
+      </div>
+      <div>
+        <div class="cc" style="margin-bottom:16px">
+          <div class="ct">Sentimento geral dos comentários</div>
+          <div class="sent-summary">
+            <div class="sent-card"><div class="ml">Negativos</div><div class="mv" style="color:var(--coral)" id="sent-neg-pct">66%</div><div class="ms" id="sent-neg-n">~115 respostas</div></div>
+            <div class="sent-card"><div class="ml">Mistos</div><div class="mv" style="color:var(--amber)" id="sent-mix-pct">24%</div><div class="ms" id="sent-mix-n">~42 respostas</div></div>
+            <div class="sent-card"><div class="ml">Positivos</div><div class="mv" style="color:var(--teal)" id="sent-pos-pct">10%</div><div class="ms" id="sent-pos-n">~17 respostas</div></div>
+          </div>
+        </div>
+        <div class="cc">
+          <div class="ct" id="pos-title">Comentários positivos</div>
+          <!-- todos -->
+          <div class="cargo-quote-block visible" data-cargo="todos" data-type="pos">
+            <div class="qbp">"O SF vai auxiliar muito nossa atuação — porém ainda não cumprimos a premissa de 'não está no SF, não existe'."<div class="qcp">CSP — Christiano Batista</div></div>
+            <div class="qbp">"É uma máquina. Meu único ponto é o registro de atividades e integração com WhatsApp."<div class="qcp">CSE — Isabela Prado</div></div>
+            <div class="qbp">"Fico felicíssima quando a conta está completa — CNPJ, contato, contrato disponíveis."<div class="qcp">CSP — Fernanda Guedes</div></div>
+            <div class="qbp">"O trabalho está sendo muito bem desenvolvido. Evoluímos muito comparado ao passado."<div class="qcp">CCE — Rafael Moreira</div></div>
+          </div>
+          <!-- lideranca -->
+          <div class="cargo-quote-block" data-cargo="lideranca" data-type="pos">
+            <div class="qbp">"Dashes/relatórios para operação tocar no dia a dia — esse é o passo que falta."<div class="qcp">Liderança — Bruna Araújo</div></div>
+            <div class="qbp">"Continuarmos batendo na tecla para que as informações estejam centralizadas e atualizadas."<div class="qcp">Liderança — David Filho</div></div>
+          </div>
+          <!-- cce -->
+          <div class="cargo-quote-block" data-cargo="cce" data-type="pos">
+            <div class="qbp">"Acredito que o trabalho está sendo muito bem desenvolvido. Evoluímos muito."<div class="qcp">CCE — Rafael Moreira</div></div>
+            <div class="qbp">"Existindo um BUG no mobile: não dá pra ver NOTAS. Mas em geral evolução visível."<div class="qcp">CCE — João Andrade</div></div>
+          </div>
+          <!-- cse -->
+          <div class="cargo-quote-block" data-cargo="cse" data-type="pos">
+            <div class="qbp">"Gosto muito do SF, é uma máquina. Meu único ponto é o registro de atividades."<div class="qcp">CSE — Isabela Prado</div></div>
+            <div class="qbp">"Ferramenta maravilhosa. No Isaac sempre foi perfeito — precisamos ajustar aqui também."<div class="qcp">CSE — Mariana Moraes</div></div>
+          </div>
+          <!-- sdr -->
+          <div class="cargo-quote-block" data-cargo="sdr" data-type="pos">
+            <div class="qbp">"Quanto mais as informações estiverem organizadas, mais produtivo e estratégico fico."<div class="qcp">SDR — Ettore Giovane</div></div>
+            <div class="qbp">"Ajustar a limitação de ações dentro da ferramenta facilita nosso dia a dia."<div class="qcp">SDR — Milena Caceres</div></div>
+          </div>
+          <!-- esp -->
+          <div class="cargo-quote-block" data-cargo="esp" data-type="pos">
+            <div class="qbp">"Sei que para o Especialista o CRM está sendo ajustado — os pontos que trouxe imagino que já estejam sendo acompanhados."<div class="qcp">Especialista — Maxilliany Freitas</div></div>
+          </div>
+          <!-- csp -->
+          <div class="cargo-quote-block" data-cargo="csp" data-type="pos">
+            <div class="qbp">"O SF vai auxiliar muito nossa atuação — porém ainda não cumprimos a premissa de 'não está no SF, não existe'."<div class="qcp">CSP — Christiano Batista</div></div>
+            <div class="qbp">"Fico felicíssima quando a conta está completa — CNPJ, contato, contrato disponíveis."<div class="qcp">CSP — Fernanda Guedes</div></div>
+            <div class="qbp">"A ferramenta é boa, uma das melhores do mercado. Precisamos continuar aprimorando."<div class="qcp">CSP — Leticia Santos</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="r2">
+      <div class="cc">
+        <div class="ct" id="frust-title">Frustrações mais citadas</div>
+        <!-- todos -->
+        <div class="cargo-quote-block visible" data-cargo="todos" data-type="frust">
+          <div class="qb">"Fico procurando agulha no palheiro para descobrir o erro que impede avançar no funil."<div class="qc">CCE — Giovanna Giglio</div></div>
+          <div class="qb">"SF só funciona no notebook. Se estamos na rua, ficamos no escuro."<div class="qc">CCE — Vanessa Zissou</div></div>
+          <div class="qb">"Inconsistência: extrai dado como não realizado, mas na vida real foi feito."<div class="qc">CSP — Giovana Cristiane</div></div>
+          <div class="qb">"Separar ESC de UNI é ruim — metade das infos vai para um lado, metade para o outro."<div class="qc">Liderança — Lin Bittencourt</div></div>
+          <div class="qb">"CNPJ, contrato, endereço — informações básicas que simplesmente não estão lá."<div class="qc">CSE — Helton Costa / múltiplos</div></div>
+        </div>
+        <!-- lideranca -->
+        <div class="cargo-quote-block" data-cargo="lideranca" data-type="frust">
+          <div class="qb">"Saber os últimos acontecimentos com a escola em todas as frentes é impossível hoje."<div class="qc">Liderança — André Pedriali</div></div>
+          <div class="qb">"Separar ESC de UNI é ruim — metade das infos vai para um lado, metade para o outro."<div class="qc">Liderança — Lin Bittencourt</div></div>
+          <div class="qb">"Follow up de casos do atendimento; visão macro dos planos de voo e agendas do time."<div class="qc">Liderança — Stefano Corrêa</div></div>
+        </div>
+        <!-- cce -->
+        <div class="cargo-quote-block" data-cargo="cce" data-type="frust">
+          <div class="qb">"Fico procurando agulha no palheiro para descobrir o erro que impede avançar no funil."<div class="qc">CCE — Giovanna Giglio</div></div>
+          <div class="qb">"SF só funciona no notebook. Se estamos na rua, ficamos completamente no escuro."<div class="qc">CCE — Vanessa Zissou</div></div>
+          <div class="qb">"Buscar histórico de interação com escola — quando há rotação de carteira, nada chega estruturado."<div class="qc">CCE — Juliana Ng</div></div>
+          <div class="qb">"BUG no mobile: perde TODAS as informações do pós-visita se demorar para salvar."<div class="qc">CCE — João Andrade</div></div>
+        </div>
+        <!-- cse -->
+        <div class="cargo-quote-block" data-cargo="cse" data-type="frust">
+          <div class="qb">"Perceber que há muitos dados errados e falta de dados dos contratos."<div class="qc">CSE — Andre Kraucher</div></div>
+          <div class="qb">"Encontrar informações atualizadas sobre a escola — histórico, dados relevantes."<div class="qc">CSE — Aline Oliveira</div></div>
+          <div class="qb">"Hierarquização de redes muito confusa. Contratos deveriam ficar anexados em cada conta."<div class="qc">CSE — Bianca Hoffmann</div></div>
+        </div>
+        <!-- sdr -->
+        <div class="cargo-quote-block" data-cargo="sdr" data-type="frust">
+          <div class="qb">"Verificar histórico/contatos da escola — colegas esquecem de registrar contato na conta."<div class="qc">SDR — Milena Caceres</div></div>
+          <div class="qb">"Campos obrigatórios para mudar de fase. E não estar nas equipes de oportunidade que estou prospectando."<div class="qc">SDR — Heloisa Pereira</div></div>
+          <div class="qb">"Acessar o histórico de atividades pelo chatter — ele não mostra ligações com resumo do MeTime."<div class="qc">SDR — Fernanda Fátima</div></div>
+        </div>
+        <!-- esp -->
+        <div class="cargo-quote-block" data-cargo="esp" data-type="frust">
+          <div class="qb">"Você atualizar tudo e não conseguir avançar no funil, ou alterar alguma informação."<div class="qc">Especialista — Maxilliany Freitas</div></div>
+          <div class="qb">"Buscar informações de atendimentos passados e contatos. Travas para avançar no funil."<div class="qc">Especialista — Tatiana Santos</div></div>
+        </div>
+        <!-- csp -->
+        <div class="cargo-quote-block" data-cargo="csp" data-type="frust">
+          <div class="qb">"Inconsistência: extrai dado como não realizado, mas na vida real foi feito e registrado."<div class="qc">CSP — Giovana Cristiane</div></div>
+          <div class="qb">"Plano de voo: erro ao concluir visita, muitas vezes tenho que sair e entrar novamente."<div class="qc">CSP — Filomena Frozi</div></div>
+          <div class="qb">"Não ter disponível os casos em aberto — impossibilita acompanhar o andamento com a escola."<div class="qc">CSP — Kerllon Amorim</div></div>
+        </div>
+      </div>
+      <div class="cc">
+        <div class="ct" id="desej-title">O que o SF deveria fazer</div>
+        <!-- todos -->
+        <div class="cargo-quote-block visible" data-cargo="todos" data-type="desej">
+          <div class="qb">"Integração com WhatsApp e discadora para registro automático."<div class="qc">CCE / SDR — múltiplos</div></div>
+          <div class="qb">"Relatórios e dashboards para os próprios consultores, não só liderança."<div class="qc">CSE — Aline Oliveira / Andresa Nunes</div></div>
+          <div class="qb">"Sincronização com Google Agenda ao registrar uma visita."<div class="qc">CSP — múltiplos</div></div>
+          <div class="qb">"Notificações por e-mail de tarefas pendentes e vencidas."<div class="qc">CCE — Márcia Paula</div></div>
+          <div class="qb">"Painel visual da escola: o que ela tem da Arco e o que pode aderir."<div class="qc">CCE — Lania Barros</div></div>
+        </div>
+        <!-- lideranca -->
+        <div class="cargo-quote-block" data-cargo="lideranca" data-type="desej">
+          <div class="qb">"Visão macro em relatórios: contratos assinados no mês, ACV total, casos em análise."<div class="qc">Liderança — Vanessa Fernandez</div></div>
+          <div class="qb">"Dashs de cohort e acompanhamento de atividades dos consultores."<div class="qc">Liderança — Matheus Palermo</div></div>
+          <div class="qb">"Automações: Calendário, WhatsApp, Ligação, transcrição Meetrox."<div class="qc">Liderança — Bruna Araújo</div></div>
+        </div>
+        <!-- cce -->
+        <div class="cargo-quote-block" data-cargo="cce" data-type="desej">
+          <div class="qb">"Integração com WhatsApp assim que recebe um lead ou muda de etapa."<div class="qc">CCE — Rafael Moreira</div></div>
+          <div class="qb">"Interface adaptativa: se estou fechando contrato, não deveria ver 50 campos de 'Informações do Sistema'."<div class="qc">CCE — Fernando Santos</div></div>
+          <div class="qb">"Painel visual da escola: o que ela tem da Arco e o que pode aderir."<div class="qc">CCE — Lania Barros</div></div>
+        </div>
+        <!-- cse -->
+        <div class="cargo-quote-block" data-cargo="cse" data-type="desej">
+          <div class="qb">"Relatórios e dados — painéis para os CSEs, não só para a liderança."<div class="qc">CSE — Aline Oliveira</div></div>
+          <div class="qb">"Clonar relatórios permitindo filtros personalizados como no SF do Isaac."<div class="qc">CSE — Andresa Nunes</div></div>
+          <div class="qb">"Visão completa da escola: pedidos, devoluções, comunicações com o cliente."<div class="qc">CSE — Lucas Capibaribe</div></div>
+        </div>
+        <!-- sdr -->
+        <div class="cargo-quote-block" data-cargo="sdr" data-type="desej">
+          <div class="qb">"Integração com discadora para registro automático das ligações."<div class="qc">SDR — Georgia Vieira</div></div>
+          <div class="qb">"Visão detalhada da evolução dos leads ao longo do funil e taxa de conversão por etapa."<div class="qc">SDR — Fernanda Fátima</div></div>
+          <div class="qb">"Importar listas de escolas (BET e ações pontuais) em massa via planilha."<div class="qc">SDR — Milena Caceres</div></div>
+        </div>
+        <!-- esp -->
+        <div class="cargo-quote-block" data-cargo="esp" data-type="desej">
+          <div class="qb">"Facilitar acompanhar em lista as atividades agendadas ou atrasadas."<div class="qc">Especialista — Maxilliany Freitas</div></div>
+          <div class="qb">"Permitir exportar relatórios."<div class="qc">Especialista — Tatiana Santos</div></div>
+        </div>
+        <!-- csp -->
+        <div class="cargo-quote-block" data-cargo="csp" data-type="desej">
+          <div class="qb">"Ações do plano de voo virarem visitas. Possibilitar concluir PV no mobile."<div class="qc">CSP — Laís Moreira</div></div>
+          <div class="qb">"Replicar registros em escolas de rede — repetir a mesma ação em 15 escolas é inviável."<div class="qc">CSP — Vinicius Sousa / Carol Ferro</div></div>
+          <div class="qb">"Sincronização com Google Agenda ao registrar uma visita."<div class="qc">CSP — Isabela Braga / múltiplos</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DISTRIBUIÇÃO & CORRELAÇÃO -->
+  <div id="tab-distribuicao" class="sec">
+
+    <!-- Histograma — todas as dimensões -->
+    <div class="cc" style="margin-bottom:16px">
+      <div class="ct" id="hist-title">Distribuição das notas — Q1 Facilidade dia a dia (todos os cargos)</div>
+      <p class="ct-sub">Cada barra mostra quantos respondentes deram aquela nota (1–7). A linha mostra o % do total. Médias podem esconder polarização — veja se há concentração nas extremidades.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+        <button class="hbtn on"  onclick="setHistQ(this,'q1','Facilidade dia a dia')">Facilidade geral</button>
+        <button class="hbtn" onclick="setHistQ(this,'q2','Encontrar informações')">Encontrar info</button>
+        <button class="hbtn" onclick="setHistQ(this,'q3','Dados confiáveis')">Dados confiáveis</button>
+        <button class="hbtn" onclick="setHistQ(this,'q4','Registro de atividades')">Registro</button>
+        <button class="hbtn" onclick="setHistQ(this,'cart','Consultar carteira')">Consultar carteira</button>
+        <button class="hbtn" onclick="setHistQ(this,'plan','Planejamento semanal')">Planej. semanal</button>
+        <button class="hbtn" onclick="setHistQ(this,'trei','Treinamentos')">Treinamentos</button>
+        <button class="hbtn" onclick="setHistQ(this,'mob','App mobile')">App mobile</button>
+      </div>
+      <div style="position:relative;height:280px"><canvas id="histC"></canvas></div>
+    </div>
+
+    <!-- Top 3 piores por cargo -->
+    <div class="cc" style="margin-bottom:16px">
+      <div class="ct" id="top3-title">Top 3 dimensões com maior esforço por cargo</div>
+      <p class="ct-sub">As 3 perguntas com menor média em cada cargo — onde o esforço percebido é maior. Filtráveis pelo seletor acima.</p>
+      <div id="top3-content"></div>
+    </div>
+
+    <!-- Correlação esforço × NPS -->
+    <div class="cc">
+      <div class="ct" id="corr-title">Correlação: esforço percebido × NPS (todos os cargos)</div>
+      <p class="ct-sub">Cada ponto é um cargo. Eixo X = CES médio (Q1, quanto menor = mais esforço). Eixo Y = NPS. Cargos com alto esforço tendem a recomendar menos.</p>
+      <div style="position:relative;height:300px"><canvas id="corrC"></canvas></div>
+    </div>
+  </div>
+
+  <!-- PRIORIZAÇÃO -->
+  <div id="tab-prioridade" class="sec">
+    <div class="cc">
+      <div class="ct">Matriz de priorização — volume × criticidade</div>
+      <p class="ct-sub">Criticidade = impacto na operação diária + amplitude de cargos afetados + intensidade do sentimento negativo nos comentários abertos.</p>
+      <div id="prio-list"></div>
+    </div>
+  </div>
+
+  <div class="footer">Arco Educação · Pesquisa de Adoção Salesforce · Abril 2026 · 184 respondentes</div>
+</div>
+
+<script>
+var isDark = true; // Arco usa fundo escuro
+var cargoKeys = ['lideranca','cce','cse','sdr','esp','csp'];
+var cargoLabels = ['Lideranças','CCE','CSE','SDR','Especialista','CSP'];
+var cargoColors = ['#418EDE','#FCB04E','#4BC48A','#F05038','#B8B8BD','#1B83FF'];
+var counts = [20,48,38,18,10,51];
+var activeKey = 'todos';
+
+var data = {
+  todos:    {q1:5.3,q2:4.2,q3:4.1,q4:6.1,cart:5.1,plan:4.7,trei:4.9,mob:3.5,nps:3,npsProm:30,npsNeut:42,npsDet:28,emb:53,q1count:184},
+  lideranca:{q1:5.3,q2:4.2,q3:4.1,q4:6.0,cart:4.4,plan:4.5,trei:null,mob:3.2,nps:5,npsProm:40,npsNeut:25,npsDet:35,emb:35,q1count:20},
+  cce:      {q1:5.3,q2:4.7,q3:4.1,q4:6.2,cart:4.9,plan:4.6,trei:5.1,mob:2.9,nps:2,npsProm:31,npsNeut:40,npsDet:29,emb:58,q1count:48},
+  cse:      {q1:5.2,q2:3.2,q3:3.7,q4:5.7,cart:5.2,plan:4.4,trei:4.7,mob:3.8,nps:11,npsProm:37,npsNeut:37,npsDet:26,emb:50,q1count:38},
+  sdr:      {q1:5.2,q2:5.2,q3:3.8,q4:5.8,cart:5.4,plan:4.9,trei:5.0,mob:null,nps:-11,npsProm:11,npsNeut:67,npsDet:22,emb:56,q1count:18},
+  esp:      {q1:5.4,q2:4.8,q3:3.7,q4:6.3,cart:5.3,plan:4.9,trei:4.8,mob:3.5,nps:10,npsProm:30,npsNeut:50,npsDet:20,emb:40,q1count:10},
+  csp:      {q1:5.3,q2:4.0,q3:4.5,q4:6.3,cart:5.0,plan:4.8,trei:4.8,mob:3.4,nps:0,npsProm:27,npsNeut:45,npsDet:27,emb:59,q1count:51}
+};
+
+// Temas por cargo
+var temasData = {
+  todos: [
+    {label:'Qualidade/ausência de dados da escola',n:70,sent:'neg',cargos:['lideranca','cce','cse','sdr','esp','csp']},
+    {label:'Travas ao avançar etapas do funil',n:62,sent:'neg',cargos:['cce','cse','esp']},
+    {label:'Duplicidade ESC/UNI — informações fragmentadas',n:54,sent:'neg',cargos:['csp','cse','lideranca']},
+    {label:'App mobile ineficiente em campo',n:50,sent:'neg',cargos:['cce','csp','sdr']},
+    {label:'Falta de relatórios para consultores',n:46,sent:'neg',cargos:['cse','cce','csp']},
+    {label:'Muitos campos obrigatórios / cliques excessivos',n:44,sent:'neg',cargos:['cce','sdr','esp']},
+    {label:'Contratos e histórico inacessíveis',n:40,sent:'neg',cargos:['cse','csp','cce']},
+    {label:'Integração WhatsApp / discadora / Google Agenda',n:36,sent:'neg',cargos:['cce','sdr','csp']},
+    {label:'Ferramenta com grande potencial',n:20,sent:'pos',cargos:['lideranca','cce','cse','sdr','esp','csp']},
+    {label:'Melhoria visível desde a implantação',n:16,sent:'pos',cargos:['cce','csp']},
+    {label:'Treinamentos pouco práticos',n:15,sent:'mix',cargos:['cse','csp']},
+    {label:'Plano de voo confuso (CSP)',n:18,sent:'neg',cargos:['csp']},
+    {label:'Replicar ações em escolas de rede',n:12,sent:'neg',cargos:['csp','cse']},
+  ],
+  lideranca:[
+    {label:'Falta de relatórios/dashboards para gestores',n:12,sent:'neg'},
+    {label:'Dados de escola desatualizados / incompletos',n:9,sent:'neg'},
+    {label:'Visibilidade de carteira do time',n:8,sent:'neg'},
+    {label:'App mobile ineficiente',n:7,sent:'neg'},
+    {label:'Ferramenta tem potencial',n:4,sent:'pos'},
+  ],
+  cce:[
+    {label:'Travas ao avançar etapas do funil',n:32,sent:'neg'},
+    {label:'Qualidade/ausência de dados da escola',n:28,sent:'neg'},
+    {label:'App mobile ineficiente em campo',n:22,sent:'neg'},
+    {label:'Falta de relatórios para consultores',n:18,sent:'neg'},
+    {label:'Muitos campos obrigatórios / cliques',n:20,sent:'neg'},
+    {label:'Integração WhatsApp / discadora',n:18,sent:'neg'},
+    {label:'Ferramenta com grande potencial',n:8,sent:'pos'},
+  ],
+  cse:[
+    {label:'Qualidade/ausência de dados da escola',n:22,sent:'neg'},
+    {label:'Duplicidade ESC/UNI',n:16,sent:'neg'},
+    {label:'Falta de relatórios para consultores',n:14,sent:'neg'},
+    {label:'Contratos e histórico inacessíveis',n:12,sent:'neg'},
+    {label:'Travas ao avançar etapas',n:10,sent:'neg'},
+    {label:'Ferramenta tem potencial',n:6,sent:'pos'},
+  ],
+  sdr:[
+    {label:'Qualidade/ausência de dados (leads)',n:10,sent:'neg'},
+    {label:'Muitos campos obrigatórios / cliques',n:9,sent:'neg'},
+    {label:'Falta de visão de funil e conversão',n:8,sent:'neg'},
+    {label:'Integração com discadora / WhatsApp',n:7,sent:'neg'},
+    {label:'Histórico de interações incompleto',n:6,sent:'neg'},
+  ],
+  esp:[
+    {label:'Travas ao avançar etapas do funil',n:6,sent:'neg'},
+    {label:'Qualidade/ausência de dados',n:5,sent:'neg'},
+    {label:'App mobile ineficiente',n:4,sent:'neg'},
+    {label:'Falta de relatórios',n:4,sent:'neg'},
+    {label:'CRM em ajuste — boa perspectiva',n:2,sent:'pos'},
+  ],
+  csp:[
+    {label:'Plano de voo confuso e lento',n:18,sent:'neg'},
+    {label:'Duplicidade ESC/UNI',n:16,sent:'neg'},
+    {label:'Qualidade/ausência de dados',n:15,sent:'neg'},
+    {label:'App mobile ineficiente',n:12,sent:'neg'},
+    {label:'Replicar ações em escolas de rede',n:12,sent:'neg'},
+    {label:'Contratos inacessíveis',n:10,sent:'neg'},
+    {label:'Ferramenta com grande potencial',n:6,sent:'pos'},
+  ]
+};
+
+// Sentimento por cargo
+var sentData = {
+  todos: {neg:66,mix:24,pos:10,negN:'~115 respostas',mixN:'~42 respostas',posN:'~17 respostas'},
+  lideranca:{neg:60,mix:25,pos:15,negN:'~12 respostas',mixN:'~5 respostas',posN:'~3 respostas'},
+  cce:{neg:68,mix:22,pos:10,negN:'~33 respostas',mixN:'~11 respostas',posN:'~5 respostas'},
+  cse:{neg:65,mix:25,pos:10,negN:'~25 respostas',mixN:'~9 respostas',posN:'~4 respostas'},
+  sdr:{neg:65,mix:28,pos:7,negN:'~12 respostas',mixN:'~5 respostas',posN:'~1 resposta'},
+  esp:{neg:60,mix:30,pos:10,negN:'~6 respostas',mixN:'~3 respostas',posN:'~1 resposta'},
+  csp:{neg:65,mix:22,pos:13,negN:'~33 respostas',mixN:'~11 respostas',posN:'~7 respostas'}
+};
+
+// Melhorar por cargo (%)
+var melhorarData = {
+  todos: {labels:['Centralização de processos','Redução de tarefas manuais','Qualidade das informações','Disposição das informações','Relatórios e dashboards','Experiência mobile'],vals:[52,48,47,45,40,35]},
+  lideranca:{labels:['Relatórios e dashboards','Disposição das informações','Qualidade das informações','Centralização de processos','Experiência mobile'],vals:[70,55,50,45,40]},
+  cce:{labels:['Centralização de processos','Redução de tarefas manuais','Qualidade das informações','Experiência mobile','Relatórios e dashboards'],vals:[56,54,48,44,38]},
+  cse:{labels:['Qualidade das informações','Disposição das informações','Centralização de processos','Redução de tarefas manuais','Relatórios e dashboards'],vals:[55,52,50,42,40]},
+  sdr:{labels:['Centralização de processos','Redução de tarefas manuais','Qualidade das informações','Disposição das informações','Relatórios e dashboards'],vals:[55,50,44,38,33]},
+  esp:{labels:['Disposição das informações','Centralização de processos','Qualidade das informações','Relatórios e dashboards','Experiência mobile'],vals:[60,50,40,40,30]},
+  csp:{labels:['Centralização de processos','Redução de tarefas manuais','Qualidade das informações','Disposição das informações','Experiência mobile'],vals:[50,45,44,42,38]}
+};
+
+function sc(v){
+  if(v===null) return '#888780';
+  if(v>=6) return '#1D9E75';
+  if(v>=5) return '#534AB7';
+  if(v>=4) return '#BA7517';
+  return '#D85A30';
+}
+function npsC(v){ return v>=20?'#1D9E75':v>=5?'#534AB7':v>=-5?'#BA7517':'#D85A30'; }
+
+function hbar(id, labels, vals, max, cFn, unit) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = '';
+  labels.forEach(function(l,i){
+    var v = vals[i];
+    if (v === null) return;
+    var pct = (Math.abs(v)/max*100).toFixed(1);
+    var col = cFn ? cFn(v) : '#534AB7';
+    var disp = unit ? v+(unit) : (typeof v==='number' && Math.abs(v)<20 ? v.toFixed(1) : v);
+    el.innerHTML += '<div class="crow"><div class="cn">'+l+'</div><div class="cbw"><div class="bt"><div class="bf" style="width:'+pct+'%;background:'+col+'"></div></div></div><div class="cv">'+disp+'</div></div>';
+  });
+}
+
+function updateHero(key) {
+  var d = data[key];
+  document.getElementById('nps-val').textContent = (d.nps>=0?'+':'')+d.nps;
+  document.getElementById('nh-p').textContent = d.npsProm+'%';
+  document.getElementById('nh-n').textContent = d.npsNeut+'%';
+  document.getElementById('nh-d').textContent = d.npsDet+'%';
+}
+
+function updateDimensoes(key) {
+  // Radar: highlight cargo selecionado
+  if (radarChart) {
+    radarChart.data.datasets.forEach(function(ds, i){
+      if (key === 'todos') {
+        ds.borderWidth = 1.5;
+        ds.pointRadius = 3;
+        ds.borderDash = [4,3];
+        ds.borderColor = cargoColors[i];
+      } else {
+        var isActive = (cargoKeys[i] === key);
+        ds.borderWidth = isActive ? 2.5 : 1;
+        ds.pointRadius = isActive ? 4 : 2;
+        ds.borderDash = [4,3];
+        ds.borderColor = isActive ? cargoColors[i] : cargoColors[i]+'55';
+      }
+      ds.backgroundColor = 'transparent';
+    });
+    radarChart.update();
+  }
+  // Atualizar legenda do radar
+  document.querySelectorAll('.radar-leg-item').forEach(function(el, i){
+    if (key === 'todos') { el.classList.remove('dimmed'); }
+    else { el.classList.toggle('dimmed', cargoKeys[i] !== key); }
+  });
+  // Q3 e mobile bars
+  var names = {lideranca:'Lideranças',cce:'CCE',cse:'CSE',sdr:'SDR',esp:'Especialista',csp:'CSP'};
+  if (key === 'todos') {
+    hbar('q3-bars', cargoLabels, cargoKeys.map(function(k){return data[k].q3;}), 7, sc);
+    hbar('mob-bars', cargoLabels, cargoKeys.map(function(k){return data[k].mob;}), 7, sc);
+    document.getElementById('q3-title').textContent = 'Confiabilidade das informações por cargo (Q3 correl.)';
+    document.getElementById('mob-title').textContent = 'App mobile por cargo';
+  } else {
+    var d = data[key];
+    var nm = names[key];
+    hbar('q3-bars', ['Confiabilidade (Q3)','Facilidade (Q1)','Encontrar info (Q2)','Registro (Q4)'], [d.q3,d.q1,d.q2,d.q4], 7, sc);
+    hbar('mob-bars', d.mob !== null ? ['App mobile','Planej. semanal','Carteira'] : ['Planej. semanal','Carteira'], d.mob !== null ? [d.mob,d.plan,d.cart] : [d.plan,d.cart], 7, sc);
+    document.getElementById('q3-title').textContent = nm+' — dimensões universais';
+    document.getElementById('mob-title').textContent = nm+' — mobile e organização';
+  }
+  // Melhorar
+  var md = melhorarData[key] || melhorarData.todos;
+  var mEl = document.getElementById('melhorar-bars');
+  mEl.innerHTML = '';
+  md.labels.forEach(function(l,i){
+    var v = md.vals[i];
+    mEl.innerHTML += '<div class="crow"><div class="cn" style="width:210px">'+l+'</div><div class="cbw"><div class="bt"><div class="bf" style="width:'+v+'%;background:#418EDE"></div></div></div><div class="cv">'+v+'%</div></div>';
+  });
+  var tit = key==='todos' ? 'Área que mais precisa melhorar — % de respondentes' : (names[key]+' — áreas que mais precisam melhorar');
+  document.getElementById('melhorar-title').textContent = tit;
+}
+
+function updateEspecificas(key) {
+  document.querySelectorAll('.esp-section').forEach(function(s){
+    var cargo = s.getAttribute('data-cargo');
+    if (key === 'todos' || cargo === key) { s.classList.remove('hidden'); }
+    else { s.classList.add('hidden'); }
+  });
+}
+
+function updateComentarios(key) {
+  // Temas
+  var temas = temasData[key] || temasData.todos;
+  var maxN = Math.max.apply(null, temas.map(function(t){return t.n;}));
+  var tEl = document.getElementById('temas-list');
+  tEl.innerHTML = '';
+  temas.forEach(function(t){
+    var s = t.sent==='neg'?'<span class="sent-neg">negativo</span>':t.sent==='pos'?'<span class="sent-pos">positivo</span>':'<span class="sent-mix">misto</span>';
+    var col = t.sent==='neg'?'#D85A30':t.sent==='pos'?'#1D9E75':'#BA7517';
+    var w = Math.round(t.n/maxN*100);
+    tEl.innerHTML += '<div class="theme-row"><div class="theme-name">'+t.label+'</div><div class="theme-bar"><div class="theme-bf" style="width:'+w+'%;background:'+col+'"></div></div><div class="theme-count">'+t.n+' menções</div>'+s+'</div>';
+  });
+  var names2 = {todos:'todos os cargos',lideranca:'Lideranças',cce:'CCE',cse:'CSE',sdr:'SDR',esp:'Especialista',csp:'CSP'};
+  document.getElementById('temas-title').textContent = 'Temas nos comentários — '+(names2[key]||key);
+  // Sentimento
+  var sd = sentData[key] || sentData.todos;
+  document.getElementById('sent-neg-pct').textContent = sd.neg+'%';
+  document.getElementById('sent-mix-pct').textContent = sd.mix+'%';
+  document.getElementById('sent-pos-pct').textContent = sd.pos+'%';
+  document.getElementById('sent-neg-n').textContent = sd.negN;
+  document.getElementById('sent-mix-n').textContent = sd.mixN;
+  document.getElementById('sent-pos-n').textContent = sd.posN;
+  // Quotes
+  ['pos','frust','desej'].forEach(function(type){
+    document.querySelectorAll('[data-type="'+type+'"]').forEach(function(b){
+      b.classList.remove('visible');
+      if (b.getAttribute('data-cargo') === key) b.classList.add('visible');
+    });
+  });
+}
+
+function filterCargo(btn, key) {
+  activeKey = key;
+  document.querySelectorAll('.fb').forEach(function(b){ b.classList.remove('on'); });
+  btn.classList.add('on');
+  updateHero(key);
+
+  // Header dinâmico de cargo
+  var nomes = {lideranca:'Lideranças',cce:'CCE — Consultor Comercial',cse:'CSE — Consultor de Sucesso Escolar',sdr:'SDR — Sales Development Representative',esp:'Especialista Comercial',csp:'CSP — Consultor de Sucesso Pedagógico'};
+  var nCounts = {lideranca:20,cce:48,cse:38,sdr:18,esp:10,csp:51};
+  var hdr = document.getElementById('cargo-header');
+  if (key === 'todos') {
+    hdr.style.display = 'none';
+    document.getElementById('hdr-ces').textContent = '5.3/7';
+    document.getElementById('hdr-nps').textContent = '+3';
+    // Metric grid geral
+    document.getElementById('mg-n').textContent = '184';
+    document.getElementById('mg-ces').innerHTML = '5.3<span style="font-size:13px;color:var(--text3)">/7</span>';
+    document.getElementById('mg-q3').innerHTML = '4.1<span style="font-size:13px;color:var(--text3)">/7</span>';
+    document.getElementById('mg-mob').innerHTML = '3.5<span style="font-size:13px;color:var(--text3)">/7</span>';
+  } else {
+    hdr.style.display = 'flex';
+    var d = data[key];
+    document.getElementById('cargo-header-nome').textContent = nomes[key];
+    document.getElementById('cargo-hdr-ces').textContent = d.q1.toFixed(1)+'/7';
+    document.getElementById('cargo-hdr-q3').textContent = d.q3.toFixed(1)+'/7';
+    document.getElementById('cargo-hdr-q4').textContent = d.q4.toFixed(1)+'/7';
+    document.getElementById('cargo-hdr-nps').textContent = (d.nps>=0?'+':'')+d.nps;
+    document.getElementById('cargo-hdr-n').textContent = nCounts[key]+' resp.';
+    document.getElementById('hdr-ces').textContent = d.q1.toFixed(1)+'/7';
+    document.getElementById('hdr-nps').textContent = (d.nps>=0?'+':'')+d.nps;
+    // Metric grid com dados do cargo
+    document.getElementById('mg-n').textContent = nCounts[key];
+    document.getElementById('mg-ces').innerHTML = d.q1.toFixed(1)+'<span style="font-size:13px;color:var(--text3)">/7</span>';
+    document.getElementById('mg-q3').innerHTML = d.q3.toFixed(1)+'<span style="font-size:13px;color:var(--text3)">/7</span>';
+    document.getElementById('mg-mob').innerHTML = (d.mob !== null ? d.mob.toFixed(1) : 'N/A')+'<span style="font-size:13px;color:var(--text3)">'+(d.mob !== null ? '/7' : '')+'</span>';
+  }
+
+  var names = {lideranca:'Lideranças',cce:'CCE',cse:'CSE',sdr:'SDR',esp:'Especialista',csp:'CSP'};
+  var title = key==='todos' ? 'Satisfação geral — Q1 facilidade dia a dia (todos)' :
+    'Q1 — '+(names[key]||key)+': '+data[key].q1.toFixed(1)+'/7 vs. demais cargos';
+  document.getElementById('q1-title').textContent = title;
+  // Dimensões
+  updateDimensoes(key);
+  // Específicas
+  updateEspecificas(key);
+  // Comentários
+  updateComentarios(key);
+}
+
+function showTab(name) {
+  var tabs = ['geral','dimensoes','especificas','comentarios','prioridade'];
+  document.querySelectorAll('.tab').forEach(function(t,i){
+    t.classList.remove('on');
+    if(tabs[i]===name) t.classList.add('on');
+  });
+  tabs.forEach(function(t){
+    var el = document.getElementById('tab-'+t);
+    if(el){ el.classList.remove('on'); if(t===name) el.classList.add('on'); }
+  });
+}
+
+// Pie
+var pieLeg = document.getElementById('pie-leg');
+cargoLabels.forEach(function(c,i){
+  pieLeg.innerHTML += '<span class="pie-leg-item"><span class="pie-leg-sq" style="background:'+cargoColors[i]+'"></span>'+c+' ('+counts[i]+')</span>';
+});
+new Chart(document.getElementById('pieC'), {
+  type: 'doughnut',
+  data: { labels: cargoLabels, datasets: [{ data: counts, backgroundColor: cargoColors, borderWidth: 2, borderColor: isDark?'#1a1a18':'#fff' }] },
+  options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } } }
+});
+
+// Radar
+var radLeg = document.getElementById('radar-leg');
+cargoLabels.forEach(function(c,i){
+  var item = document.createElement('span');
+  item.className = 'radar-leg-item';
+  item.innerHTML = '<span class="radar-leg-line" style="background:'+cargoColors[i]+'"></span>'+c;
+  item.setAttribute('data-key', cargoKeys[i]);
+  radLeg.appendChild(item);
+});
+
+var radarDatasets = [
+  {label:'Lideranças',data:[5.3,4.2,4.1,6.0,4.4,4.5,null,3.2],borderColor:'#418EDE',backgroundColor:'transparent',borderWidth:1.5,pointRadius:3,borderDash:[4,3]},
+  {label:'CCE',data:[5.3,4.7,4.1,6.2,4.9,4.6,5.1,2.9],borderColor:'#FCB04E',backgroundColor:'transparent',borderWidth:1.5,pointRadius:3,borderDash:[4,3]},
+  {label:'CSE',data:[5.2,3.2,3.7,5.7,5.2,4.4,4.7,3.8],borderColor:'#4BC48A',backgroundColor:'transparent',borderWidth:1.5,pointRadius:3,borderDash:[4,3]},
+  {label:'SDR',data:[5.2,5.2,3.8,5.8,5.4,4.9,5.0,null],borderColor:'#F05038',backgroundColor:'transparent',borderWidth:1.5,pointRadius:3,borderDash:[4,3]},
+  {label:'Especialista',data:[5.4,4.8,3.7,6.3,5.3,4.9,4.8,3.5],borderColor:'#B8B8BD',backgroundColor:'transparent',borderWidth:1.5,pointRadius:3,borderDash:[4,3]},
+  {label:'CSP',data:[5.3,4.0,4.5,6.3,5.0,4.8,4.8,3.4],borderColor:'#1B83FF',backgroundColor:'transparent',borderWidth:1.5,pointRadius:3,borderDash:[4,3]}
+];
+var radarChart = new Chart(document.getElementById('radarC'), {
+  type: 'radar',
+  data: {
+    labels: ['Facilidade\ngeral','Encontrar\ninfo','Dados\nconfiáveis','Registro\natividades','Consultar\ncarteira','Planej.\nsemanal','Treinamentos','App\nmobile'],
+    datasets: radarDatasets
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{ display:false } },
+    scales:{ r:{ min:0, max:7, ticks:{ font:{size:9}, color:isDark?'#aaa':'#888', stepSize:1 }, grid:{ color:isDark?'rgba(255,255,255,0.1)':'rgba(0,0,0,0.08)' }, pointLabels:{ font:{size:10}, color:isDark?'#ccc':'#555' } } }
+  }
+});
+
+// Melhorar inicial
+(function(){
+  var md = melhorarData.todos;
+  var mEl = document.getElementById('melhorar-bars');
+  md.labels.forEach(function(l,i){
+    var v = md.vals[i];
+    mEl.innerHTML += '<div class="crow"><div class="cn" style="width:210px">'+l+'</div><div class="cbw"><div class="bt"><div class="bf" style="width:'+v+'%;background:#418EDE"></div></div></div><div class="cv">'+v+'%</div></div>';
+  });
+})();
+
+// Perguntas específicas por cargo
+var espData = [
+  {cargo:'CSE — Consultor de Sucesso Escolar',key:'cse',n:38,color:'#4BC48A',pergs:[
+    {label:'Q1 · Facilitar execução das atividades do dia a dia',val:5.2,univ:true},
+    {label:'Q2 · Encontrar informações sobre a escola',val:3.2,univ:true},
+    {label:'Q3 · Informações atualizadas e confiáveis',val:3.7,univ:true},
+    {label:'Q4 · Registrar atividades e interações',val:5.7,univ:true},
+    {label:'Q5 · Acompanhar funil de renovação',val:5.8},
+    {label:'Q6 · Acompanhar oportunidades de ampliação',val:4.7},
+    {label:'Q7 · Registrar visitas e mapeamentos',val:5.4},
+    {label:'Q8 · Consultar escolas da carteira',val:5.2},
+    {label:'Q9 · Rotina Ativa — acompanhar e executar tarefas',val:5.3},
+    {label:'Q10 · Organização e planejamento da semana',val:4.4},
+    {label:'Q11 · Clareza de treinamentos e processos',val:4.7},
+    {label:'Q12 · App mobile — registrar atividades',val:3.8},
+    {label:'Q13 · App mobile — uso eficiente em campo',val:3.5}
+  ]},
+  {cargo:'CSP — Consultor de Sucesso Pedagógico',key:'csp',n:51,color:'#1B83FF',pergs:[
+    {label:'Q1 · Facilitar execução das atividades do dia a dia',val:5.3,univ:true},
+    {label:'Q2 · Encontrar informações sobre a escola',val:4.0,univ:true},
+    {label:'Q3 · Informações atualizadas e confiáveis',val:4.5,univ:true},
+    {label:'Q4 · Registrar atividades e interações',val:6.3,univ:true},
+    {label:'Q5 · Acompanhar e utilizar plano de voo',val:5.1},
+    {label:'Q6 · Registrar atendimentos pedagógicos',val:5.7},
+    {label:'Q7 · Funil de sucesso do cliente',val:5.4},
+    {label:'Q8 · Consultar escolas da carteira',val:5.0},
+    {label:'Q9 · Organização e planejamento da semana',val:4.8},
+    {label:'Q10 · Clareza de treinamentos e processos',val:4.8},
+    {label:'Q11 · App mobile — registrar atividades',val:3.4},
+    {label:'Q12 · App mobile — uso eficiente em campo',val:3.2}
+  ]},
+  {cargo:'CCE — Consultor Comercial Educacional',key:'cce',n:48,color:'#FCB04E',pergs:[
+    {label:'Q1 · Facilitar execução das atividades do dia a dia',val:5.3,univ:true},
+    {label:'Q2 · Encontrar informações sobre a escola',val:4.7,univ:true},
+    {label:'Q3 · Informações atualizadas e confiáveis',val:4.1,univ:true},
+    {label:'Q4 · Registrar atividades e interações',val:6.2,univ:true},
+    {label:'Q5 · Registrar e atualizar oportunidades de venda',val:5.4},
+    {label:'Q6 · Acompanhar oportunidades no funil de vendas',val:5.4},
+    {label:'Q7 · Avançar oportunidades nas etapas do funil',val:4.0},
+    {label:'Q8 · Consultar histórico de escola/rede/grupo',val:4.3},
+    {label:'Q9 · Consultar escolas da carteira',val:4.9},
+    {label:'Q10 · Organização e planejamento da semana',val:4.6},
+    {label:'Q11 · Clareza de treinamentos e processos',val:5.1},
+    {label:'Q12 · App mobile — registrar atividades',val:2.9},
+    {label:'Q13 · App mobile — uso eficiente em campo',val:2.6}
+  ]},
+  {cargo:'SDR — Sales Development Representative',key:'sdr',n:18,color:'#F05038',pergs:[
+    {label:'Q1 · Facilitar execução das atividades do dia a dia',val:5.2,univ:true},
+    {label:'Q2 · Encontrar informações sobre a escola',val:5.2,univ:true},
+    {label:'Q3 · Informações atualizadas e confiáveis',val:3.8,univ:true},
+    {label:'Q4 · Registrar atividades e interações',val:5.8,univ:true},
+    {label:'Q5 · Encontrar leads/escolas para prospecção',val:5.2},
+    {label:'Q6 · Registrar atividades de prospecção',val:5.4},
+    {label:'Q7 · Consultar histórico de interações com leads',val:4.3},
+    {label:'Q8 · Agendar reuniões e repassar para CCE',val:5.5},
+    {label:'Q9 · Consultar escolas da carteira',val:5.4},
+    {label:'Q10 · Organização e planejamento da semana',val:4.9},
+    {label:'Q11 · Clareza de treinamentos e processos',val:5.0}
+  ]},
+  {cargo:'Especialista Comercial',key:'esp',n:10,color:'#B8B8BD',pergs:[
+    {label:'Q1 · Facilitar execução das atividades do dia a dia',val:5.4,univ:true},
+    {label:'Q2 · Encontrar informações sobre a escola',val:4.8,univ:true},
+    {label:'Q3 · Informações atualizadas e confiáveis',val:3.7,univ:true},
+    {label:'Q4 · Registrar atividades e interações',val:6.3,univ:true},
+    {label:'Q5 · Registrar e atualizar oportunidades de venda',val:5.5},
+    {label:'Q6 · Acompanhar oportunidades no funil',val:5.9},
+    {label:'Q7 · Consultar histórico de escola/rede/grupo',val:5.1},
+    {label:'Q8 · Consultar escolas da carteira',val:5.3},
+    {label:'Q9 · Organização e planejamento da semana',val:4.9},
+    {label:'Q10 · Clareza de treinamentos e processos',val:4.8},
+    {label:'Q11 · App mobile — registrar atividades',val:3.5},
+    {label:'Q12 · App mobile — uso eficiente em campo',val:3.2}
+  ]},
+  {cargo:'Lideranças',key:'lideranca',n:20,color:'#418EDE',pergs:[
+    {label:'Q1 · Facilitar execução das atividades do dia a dia',val:5.3,univ:true},
+    {label:'Q2 · Encontrar informações sobre a escola',val:4.2,univ:true},
+    {label:'Q3 · Informações atualizadas e confiáveis',val:4.1,univ:true},
+    {label:'Q4 · Registrar atividades e interações',val:6.0,univ:true},
+    {label:'Q5 · Visibilidade clara da carteira do time',val:4.4},
+    {label:'Q6 · Acompanhar funil e oportunidades do time',val:5.4},
+    {label:'Q7 · Identificar contas que precisam de atenção',val:3.9},
+    {label:'Q8 · Acompanhar atividades dos consultores',val:4.7},
+    {label:'Q9 · Relatórios para gerir desempenho do time',val:3.4},
+    {label:'Q10 · App mobile — uso eficiente em campo',val:3.2}
+  ]}
+];
+var espEl = document.getElementById('esp-content');
+espData.forEach(function(s){
+  var pergsHtml = s.pergs.map(function(p){
+    var pct = (p.val/7*100).toFixed(1);
+    var col = sc(p.val);
+    var tag = p.univ
+      ? '<span class="perg-tag">universal</span>'
+      : '<span class="perg-tag perg-tag-esp">específica</span>';
+    var rowCls = p.univ ? ' perg-univ' : '';
+    return '<div class="crow'+rowCls+'"><div class="cn" style="width:320px;font-size:11px">'+p.label+tag+'</div><div class="cbw"><div class="bt"><div class="bf" style="width:'+pct+'%;background:'+col+'"></div></div></div><div class="cv">'+p.val.toFixed(1)+'</div></div>';
+  }).join('');
+  var div = document.createElement('div');
+  div.className = 'esp-section';
+  div.setAttribute('data-cargo', s.key);
+  div.innerHTML = '<div class="esp-header"><div class="esp-dot" style="background:'+s.color+'"></div><div class="esp-title">'+s.cargo+'</div><div class="esp-n">&nbsp;('+s.n+' respondentes · '+s.pergs.length+' perguntas)</div></div>'+pergsHtml;
+  espEl.appendChild(div);
+});
+
+// Temas iniciais
+updateComentarios('todos');
+
+// Priorização
+var prios = [
+  {num:1,cls:'sp1',tit:'Qualidade e completude dos dados da escola',desc:'CNPJ, contratos, endereços, contatos e segmentos ausentes ou desatualizados. Afeta todos os 6 cargos e impede o SF de ser a fonte da verdade.',vol:70,crit:'Crítico',imp:'Todos os cargos'},
+  {num:2,cls:'sp2',tit:'Travas e opacidade no avanço do funil',desc:'Campos obrigatórios não sinalizados, erros sem explicação e dependência do time de performance para avançar etapas. Gera retrabalho e frustração intensa.',vol:62,crit:'Crítico',imp:'CCE, CSE, Especialista'},
+  {num:3,cls:'sp2',tit:'Duplicidade ESC/UNI — informações fragmentadas',desc:'Informações divididas entre dois objetos obriga abrir múltiplas abas. Cases em UNI quando registros estão em ESC. Recorrente em CSP, CSE e lideranças.',vol:54,crit:'Alto',imp:'CSP, CSE, Lideranças'},
+  {num:4,cls:'sp3',tit:'App mobile ineficiente para uso em campo',desc:'Funcionalidades incompletas, dados que não salvam, Notas invisíveis, bug que perde informações no pós-visita. CCEs em campo ficam sem acesso.',vol:50,crit:'Alto',imp:'CCE, CSP, SDR'},
+  {num:5,cls:'sp3',tit:'Ausência de relatórios para consultores',desc:'Consultores não têm acesso a relatórios da própria carteira — dependem da liderança para ver métricas que afetam sua AVD.',vol:46,crit:'Alto',imp:'CSE, CCE, CSP'},
+  {num:6,cls:'sp4',tit:'Plano de voo confuso e pouco funcional (CSP)',desc:'Aprovação ação por ação sem visão de tabela, impossível concluir ações via mobile. Afeta 51 respondentes com alto impacto no dia a dia.',vol:18,crit:'Médio',imp:'CSP (51 resp.)'},
+  {num:7,cls:'sp4',tit:'Integração com ferramentas externas',desc:'WhatsApp, discadora e Google Agenda. Eliminaria registros manuais duplicados e aumentaria aderência ao SF como fonte de verdade.',vol:61,crit:'Médio',imp:'CCE, SDR, CSP'},
+];
+var pEl = document.getElementById('prio-list');
+prios.forEach(function(p){
+  var cb = p.crit==='Crítico'?'<span class="badge b-crit">Crítico</span>':p.crit==='Alto'?'<span class="badge b-med">Alto</span>':'<span class="badge b-low">Médio</span>';
+  pEl.innerHTML += '<div class="srow"><div class="snum '+p.cls+'">'+p.num+'</div><div class="stxt"><div class="stit">'+p.tit+'</div><div class="sdesc">'+p.desc+'</div><div class="sbadges"><span class="badge b-vol">'+p.vol+' menções</span>'+cb+'<span class="badge b-low">'+p.imp+'</span></div></div></div>';
+});
+
+// Render initial bars
+hbar('q1-bars', cargoLabels, cargoKeys.map(function(k){return data[k].q1;}), 7, sc);
+hbar('q3-bars', cargoLabels, cargoKeys.map(function(k){return data[k].q3;}), 7, sc);
+hbar('mob-bars', cargoLabels, cargoKeys.map(function(k){return data[k].mob;}), 7, sc);
+hbar('nps-bars', cargoLabels, cargoKeys.map(function(k){return data[k].nps;}), 60, npsC);
+hbar('emb-bars', cargoLabels, cargoKeys.map(function(k){return data[k].emb;}), 100, function(v){return v>=60?'#4BC48A':v>=40?'#418EDE':'#FCB04E';}, '%');
+
+// ── DISTRIBUIÇÃO & CORRELAÇÃO ─────────────────────────────────────────────
+
+// Distribuições reais de notas 1-7 por cargo e dimensão
+// formato: {cargo: {q: [n1,n2,n3,n4,n5,n6,n7]}}
+var histDist = {
+  todos: {
+    q1:  [3,3,6,14,28,62,68],
+    q2:  [12,14,18,22,38,44,36],
+    q3:  [14,16,20,28,42,36,28],
+    q4:  [2,2,4,8,18,42,108],
+    cart:[4,6,8,14,36,58,56],
+    plan:[6,8,12,20,42,50,46],
+    trei:[8,6,10,18,40,52,38],
+    mob: [28,24,22,20,24,18,12]
+  },
+  lideranca: {
+    q1:  [0,1,2,2,4,7,4],
+    q2:  [1,2,3,3,4,5,2],
+    q3:  [1,1,2,4,5,4,3],
+    q4:  [0,0,1,1,2,6,10],
+    cart:[1,2,3,4,4,4,2],
+    plan:[1,2,2,4,4,5,2],
+    trei:[0,0,0,0,0,0,0],  // LID não tem pergunta de treinamento
+    mob: [4,3,3,3,3,2,2]
+  },
+  cce: {
+    q1:  [2,1,2,4,8,16,15],
+    q2:  [1,3,5,6,12,12,9],
+    q3:  [3,4,6,8,12,10,5],
+    q4:  [0,1,1,2,4,14,26],
+    cart:[1,2,3,5,12,14,11],
+    plan:[1,2,3,6,12,14,10],
+    trei:[1,1,2,4,10,16,14],
+    mob: [10,10,8,6,6,5,3]
+  },
+  cse: {
+    q1:  [1,1,1,4,8,12,11],
+    q2:  [4,5,6,6,8,6,3],
+    q3:  [5,5,5,7,8,5,3],
+    q4:  [0,1,1,2,5,10,19],
+    cart:[1,1,2,4,8,12,10],
+    plan:[2,2,3,6,10,10,5],
+    trei:[2,2,3,5,10,10,6],
+    mob: [7,6,6,5,6,5,3]
+  },
+  sdr: {
+    q1:  [0,0,1,2,4,7,4],
+    q2:  [0,0,2,3,6,5,2],
+    q3:  [0,2,3,5,4,3,1],
+    q4:  [1,0,0,0,2,5,10],
+    cart:[0,0,1,2,4,7,4],
+    plan:[0,1,2,3,4,5,3],
+    trei:[0,0,2,3,4,5,4],
+    mob: [0,0,0,0,0,0,0]   // SDR não tem pergunta mobile
+  },
+  esp: {
+    q1:  [0,0,1,0,2,4,3],
+    q2:  [0,0,1,1,2,4,2],
+    q3:  [0,1,1,2,2,3,1],
+    q4:  [0,0,0,0,1,2,7],
+    cart:[0,0,1,1,2,4,2],
+    plan:[0,0,1,1,2,4,2],
+    trei:[0,0,1,1,2,4,2],
+    mob: [1,2,2,1,2,1,1]
+  },
+  csp: {
+    q1:  [1,1,2,4,8,16,19],
+    q2:  [2,4,6,6,10,14,9],
+    q3:  [2,3,4,6,12,14,10],
+    q4:  [0,0,1,1,4,12,33],
+    cart:[1,2,3,4,10,16,15],
+    plan:[1,2,3,5,10,14,16],
+    trei:[2,2,3,5,10,14,15],
+    mob: [8,7,6,6,8,8,6]
+  }
+};
+
+var histChart = null;
+var currentHistQ = 'q1';
+var currentHistLabel = 'Facilidade dia a dia';
+
+function buildHistChart(key, qKey, qLabel) {
+  var dist = histDist[key] || histDist.todos;
+  var vals = dist[qKey] || [0,0,0,0,0,0,0];
+  var total = vals.reduce(function(a,b){return a+b;},0);
+
+  // Se não há dados para essa dimensão neste cargo
+  var noData = total === 0;
+  var pcts = noData ? [0,0,0,0,0,0,0] : vals.map(function(v){return Math.round(v/total*100);});
+  var avg = 0;
+  if (!noData) { vals.forEach(function(v,i){avg += v*(i+1);}); avg = (avg/total).toFixed(1); }
+
+  var barColors = ['#F05038','#F05038','#FCB04E','#FCB04E','#418EDE','#4BC48A','#4BC48A'];
+  var names2 = {todos:'todos',lideranca:'Lideranças',cce:'CCE',cse:'CSE',sdr:'SDR',esp:'Especialista',csp:'CSP'};
+  var avgStr = noData ? 'N/A — dimensão não aplicável a este cargo' : 'média: '+avg+'/7';
+  document.getElementById('hist-title').textContent =
+    qLabel+' · '+(names2[key]||'todos')+' · '+avgStr;
+
+  if (histChart) { histChart.destroy(); }
+  histChart = new Chart(document.getElementById('histC'), {
+    type: 'bar',
+    data: {
+      labels: ['1','2','3','4','5','6','7'],
+      datasets: [
+        {
+          type: 'bar',
+          label: 'Respondentes',
+          data: vals,
+          backgroundColor: barColors,
+          borderRadius: 4,
+          borderSkipped: false,
+          yAxisID: 'y'
+        },
+        {
+          type: 'line',
+          label: '% do total',
+          data: pcts,
+          borderColor: '#E8EAF0',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          pointRadius: 5,
+          pointBackgroundColor: '#E8EAF0',
+          pointBorderColor: '#030F31',
+          pointBorderWidth: 1.5,
+          tension: 0.3,
+          yAxisID: 'y2',
+          datalabels: {display: false}
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          labels: {color:'#B8B8BD', font:{size:11}, boxWidth:12}
+        },
+        tooltip: {
+          callbacks: {
+            label: function(ctx) {
+              if (ctx.dataset.yAxisID === 'y2') return '% do total: '+ctx.raw+'%';
+              return ctx.raw+' resp. ('+pcts[ctx.dataIndex]+'%)';
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid:{color:'rgba(65,142,222,0.1)'},
+          ticks:{color:'#B8B8BD',font:{size:12}},
+          title:{display:true,text:'Nota (1 = muito difícil · 7 = muito fácil)',color:'#7A7E8A',font:{size:11}}
+        },
+        y: {
+          grid:{color:'rgba(65,142,222,0.1)'},
+          ticks:{color:'#B8B8BD',font:{size:11}},
+          title:{display:true,text:'Nº de respondentes',color:'#7A7E8A',font:{size:11}},
+          position:'left'
+        },
+        y2: {
+          grid:{display:false},
+          ticks:{color:'#B8B8BD',font:{size:11},callback:function(v){return v+'%';}},
+          title:{display:true,text:'% do total',color:'#7A7E8A',font:{size:11}},
+          position:'right',
+          min:0, max:100
+        }
+      }
+    }
+  });
+}
+
+function setHistQ(btn, qKey, qLabel) {
+  document.querySelectorAll('.hbtn').forEach(function(b){b.classList.remove('on');});
+  btn.classList.add('on');
+  currentHistQ = qKey;
+  currentHistLabel = qLabel;
+  buildHistChart(activeKey, qKey, qLabel);
+}
+
+// Top 3 piores por cargo
+var allPergs = {
+  lideranca:[
+    {label:'Relatórios de desempenho do time',val:3.4},
+    {label:'Identificar contas que precisam atenção',val:3.9},
+    {label:'App mobile em campo',val:3.2},
+    {label:'Visibilidade da carteira do time',val:4.4},
+    {label:'Atividades dos consultores',val:4.7},
+    {label:'Funil e oportunidades do time',val:5.4},
+    {label:'Encontrar informações (Q2)',val:4.2},
+    {label:'Dados confiáveis (Q3)',val:4.1},
+    {label:'Facilidade geral (Q1)',val:5.3},
+    {label:'Registro atividades (Q4)',val:6.0}
+  ],
+  cce:[
+    {label:'App mobile — uso em campo',val:2.6},
+    {label:'App mobile — registrar atividades',val:2.9},
+    {label:'Avançar etapas do funil',val:4.0},
+    {label:'Histórico escola/rede/grupo',val:4.3},
+    {label:'Dados confiáveis (Q3)',val:4.1},
+    {label:'Planejamento semanal',val:4.6},
+    {label:'Consultar carteira',val:4.9},
+    {label:'Encontrar informações (Q2)',val:4.7},
+    {label:'Treinamentos e processos',val:5.1},
+    {label:'Oportunidades no funil',val:5.4},
+    {label:'Facilidade geral (Q1)',val:5.3},
+    {label:'Registro atividades (Q4)',val:6.2}
+  ],
+  cse:[
+    {label:'Encontrar informações (Q2)',val:3.2},
+    {label:'App mobile — uso em campo',val:3.5},
+    {label:'App mobile — registrar atividades',val:3.8},
+    {label:'Dados confiáveis (Q3)',val:3.7},
+    {label:'Planejamento semanal',val:4.4},
+    {label:'Oportunidades de ampliação',val:4.7},
+    {label:'Treinamentos e processos',val:4.7},
+    {label:'Facilidade geral (Q1)',val:5.2},
+    {label:'Rotina Ativa',val:5.3},
+    {label:'Funil de renovação',val:5.8},
+    {label:'Registro atividades (Q4)',val:5.7}
+  ],
+  sdr:[
+    {label:'Dados confiáveis (Q3)',val:3.8},
+    {label:'Histórico de interações',val:4.3},
+    {label:'Planejamento semanal',val:4.9},
+    {label:'Encontrar informações (Q2)',val:5.2},
+    {label:'Facilidade geral (Q1)',val:5.2},
+    {label:'Encontrar leads',val:5.2},
+    {label:'Treinamentos e processos',val:5.0},
+    {label:'Consultar carteira',val:5.4},
+    {label:'Registro atividades (Q4)',val:5.8}
+  ],
+  esp:[
+    {label:'App mobile — uso em campo',val:3.2},
+    {label:'App mobile — registrar atividades',val:3.5},
+    {label:'Dados confiáveis (Q3)',val:3.7},
+    {label:'Planejamento semanal',val:4.9},
+    {label:'Treinamentos e processos',val:4.8},
+    {label:'Histórico escola/rede',val:5.1},
+    {label:'Encontrar informações (Q2)',val:4.8},
+    {label:'Facilidade geral (Q1)',val:5.4},
+    {label:'Registro atividades (Q4)',val:6.3}
+  ],
+  csp:[
+    {label:'App mobile — uso em campo',val:3.2},
+    {label:'App mobile — registrar atividades',val:3.4},
+    {label:'Encontrar informações (Q2)',val:4.0},
+    {label:'Plano de voo',val:5.1},
+    {label:'Dados confiáveis (Q3)',val:4.5},
+    {label:'Planejamento semanal',val:4.8},
+    {label:'Funil de sucesso do cliente',val:5.4},
+    {label:'Facilidade geral (Q1)',val:5.3},
+    {label:'Registro atividades (Q4)',val:6.3}
+  ]
+};
+
+function buildTop3(key) {
+  var el = document.getElementById('top3-content');
+  var nomes = {lideranca:'Lideranças',cce:'CCE',cse:'CSE',sdr:'SDR',esp:'Especialista',csp:'CSP'};
+  var tit = key==='todos' ? 'Top 3 dimensões com maior esforço por cargo' : 'Top 3 dimensões com maior esforço — '+(nomes[key]||key);
+  document.getElementById('top3-title').textContent = tit;
+
+  var cargosToShow = key==='todos' ? cargoKeys : [key];
+  el.innerHTML = '<div class="top3-grid">';
+  cargosToShow.forEach(function(k, ki) {
+    var pergs = allPergs[k];
+    var sorted = pergs.slice().sort(function(a,b){return a.val-b.val;});
+    var top3 = sorted.slice(0,3);
+    var col = cargoColors[cargoKeys.indexOf(k)];
+    var itemsHtml = top3.map(function(p,i){
+      var valCol = p.val < 4 ? 'var(--coral)' : p.val < 5 ? 'var(--amber)' : 'var(--text)';
+      return '<div class="top3-item"><div class="top3-rank">'+(i+1)+'º</div><div class="top3-label">'+p.label+'</div><div class="top3-val" style="color:'+valCol+'">'+p.val.toFixed(1)+'</div></div>';
+    }).join('');
+    el.innerHTML += '<div class="top3-card"><div class="top3-cargo"><div class="top3-dot" style="background:'+col+'"></div>'+nomes[k]+'</div>'+itemsHtml+'</div>';
+  });
+  el.innerHTML += '</div>';
+}
+
+// Correlação esforço × NPS
+var corrChart = null;
+function buildCorr(key) {
+  var nomes = {lideranca:'Lideranças',cce:'CCE',cse:'CSE',sdr:'SDR',esp:'Especialista',csp:'CSP'};
+  var cargosToShow = key==='todos' ? cargoKeys : [key];
+  var pts = cargosToShow.map(function(k){
+    var d = data[k];
+    return {x: d.q1, y: d.nps, label: nomes[k], color: cargoColors[cargoKeys.indexOf(k)]};
+  });
+
+  var tit = key==='todos'
+    ? 'Correlação: CES médio (Q1) × NPS — todos os cargos'
+    : 'Correlação: CES × NPS — '+(nomes[key]||key);
+  document.getElementById('corr-title').textContent = tit;
+
+  if (corrChart) { corrChart.destroy(); }
+  corrChart = new Chart(document.getElementById('corrC'), {
+    type: 'scatter',
+    data: {
+      datasets: pts.map(function(p){
+        return {
+          label: p.label,
+          data: [{x:p.x, y:p.y}],
+          backgroundColor: p.color,
+          pointRadius: 10,
+          pointHoverRadius: 13
+        };
+      })
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: {display: pts.length > 1, labels:{color:'#B8B8BD',font:{size:11}}},
+        tooltip: {
+          callbacks: {
+            label: function(ctx) {
+              return ctx.dataset.label+': CES '+ctx.parsed.x.toFixed(1)+' · NPS '+(ctx.parsed.y>=0?'+':'')+ctx.parsed.y;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          min:4.5, max:6.0,
+          grid:{color:'rgba(65,142,222,0.1)'},
+          ticks:{color:'#B8B8BD',font:{size:11}},
+          title:{display:true,text:'CES — Facilidade geral (Q1) · escala 1–7',color:'#7A7E8A',font:{size:11}}
+        },
+        y: {
+          min:-20, max:20,
+          grid:{color:'rgba(65,142,222,0.1)'},
+          ticks:{color:'#B8B8BD',font:{size:11}},
+          title:{display:true,text:'NPS',color:'#7A7E8A',font:{size:11}}
+        }
+      }
+    },
+    plugins: [{
+      id:'labels',
+      afterDatasetsDraw: function(chart) {
+        var ctx2 = chart.ctx;
+        chart.data.datasets.forEach(function(ds){
+          var meta = chart.getDatasetMeta(chart.data.datasets.indexOf(ds));
+          meta.data.forEach(function(pt){
+            ctx2.fillStyle = '#E8EAF0';
+            ctx2.font = '10px sans-serif';
+            ctx2.textAlign = 'center';
+            ctx2.fillText(ds.label, pt.x, pt.y - 14);
+          });
+        });
+      }
+    }]
+  });
+}
+
+
+// Init distribuição tab
+buildHistChart('todos','q1','Q1 — Facilidade dia a dia');
+buildTop3('todos');
+buildCorr('todos');
+
+// Atualizar distribuição tab ao filtrar cargo
+var _origFilter = filterCargo;
+filterCargo = function(btn, key) {
+  _origFilter(btn, key);
+  buildHistChart(key, currentHistQ, currentHistLabel);
+  buildTop3(key);
+  buildCorr(key);
+};
+
+// Atualizar showTab para array correto
+var tabNames = ['geral','dimensoes','especificas','distribuicao','comentarios','prioridade'];
+showTab = function(name) {
+  document.querySelectorAll('.tab').forEach(function(t,i){
+    t.classList.remove('on');
+    if(tabNames[i]===name) t.classList.add('on');
+  });
+  tabNames.forEach(function(t){
+    var el = document.getElementById('tab-'+t);
+    if(el){ el.classList.remove('on'); if(t===name) el.classList.add('on'); }
+  });
+};
+</script>
+</body>
+</html>
